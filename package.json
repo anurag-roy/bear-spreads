@@ -1,0 +1,55 @@
+{
+  "name": "bear-spreads",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Bear Spreads Debit/Credit using Kite APIs",
+  "main": "server/index.ts",
+  "scripts": {
+    "dev": "tsx watch --env-file=.env server/index.ts",
+    "build": "npx tsx scripts/build.ts",
+    "start": "tsx --env-file=.env server/index.ts",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"{server,client/src}/**/*.{js,jsx,ts,tsx,css,json,md}\"",
+    "db": "drizzle-kit",
+    "db:seed": "tsx --env-file=.env server/scripts/seed.ts",
+    "data:prepare": "npm run db:migrate && npm run db:seed",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate": "drizzle-kit migrate",
+    "db:generate": "drizzle-kit generate",
+    "login": "tsx --env-file=.env server/scripts/login.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/anurag-roy/bear-spreads.git"
+  },
+  "author": "Anurag Roy <anuragroy@duck.com> (https://anuragroy.dev)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/anurag-roy/bear-spreads/issues"
+  },
+  "homepage": "https://github.com/anurag-roy/bear-spreads#readme",
+  "devDependencies": {
+    "@types/node": "^24.3.1",
+    "drizzle-kit": "^0.31.4",
+    "prettier": "^3.6.2",
+    "prettier-plugin-organize-imports": "^4.2.0",
+    "prettier-plugin-tailwindcss": "^0.6.14",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.1",
+    "@hono/node-ws": "^1.2.0",
+    "@hono/zod-validator": "^0.7.2",
+    "@libsql/client": "^0.15.14",
+    "drizzle-orm": "^0.44.5",
+    "es-toolkit": "^1.39.10",
+    "hono": "^4.9.6",
+    "kiteconnect-ts": "^1.1.0",
+    "otplib": "^12.0.1",
+    "picocolors": "^1.1.1",
+    "tough-cookie": "^6.0.0",
+    "zod": "^4.1.5"
+  }
+}
