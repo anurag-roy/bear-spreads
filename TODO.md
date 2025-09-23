@@ -1,0 +1,3 @@
+- Update build script to a deploy script with db migrate, seed, etc
+- Store in DB, time of last token generation and auto seed and auto login if time is older than today
+- Migrate to Bun
