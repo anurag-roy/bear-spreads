@@ -31,10 +31,7 @@ export const rootRoute = new Hono()
     async (c) => {
       const { expiry } = c.req.valid('json');
 
-      const atm = tickerService.NIFTY_PRICE;
-      const strikes = strikesService.getStrikesForExpiry(expiry, atm);
-
-      tickerService.subscribe(strikes);
+      tickerService.subscribe(expiry);
 
       return c.json({
         message: 'Subscribed to expiry',

@@ -1,6 +1,7 @@
 import { env } from '@server/lib/env';
 import { logger } from '@server/lib/logger';
 import { accessToken } from '@server/lib/services/accessToken';
+import { strikesService } from '@server/lib/services/strikes';
 import type { StrikeTokensMap } from '@server/types/types';
 import type { WSContext } from 'hono/ws';
 import { KiteTicker, type TickFull, type TickLtp } from 'kiteconnect-ts';
@@ -21,6 +22,7 @@ class TickerService {
   private client: WSContext | null = null;
   private subscribedTokens = new Set<number>();
 
+  private expiry: string | null = null;
   public strikeTokensMap: StrikeTokensMapOptional = {
     ceMinus: undefined,
     cePlus: undefined,
@@ -121,7 +123,7 @@ class TickerService {
     this.ticker.on('ticks', (ticks: (TickLtp | TickFull)[]) => {
       for (const tick of ticks) {
         if (tick.instrument_token === this.NIFTY_TOKEN) {
-          this.NIFTY_PRICE = tick.last_price;
+          this.updateNiftyPrice(tick.last_price);
         } else if (tick.mode === 'full') {
           if (!this.bidAskMap[tick.instrument_token]) {
             this.bidAskMap[tick.instrument_token] = { bid: 0, ask: 0 };
@@ -137,16 +139,33 @@ class TickerService {
       if (spreads && this.client) {
         this.client.send(JSON.stringify(spreads));
       }
-    }, 500);
+    }, 250);
   }
 
   public subscribeToNifty() {
     this.ticker.setMode('ltp', [this.NIFTY_TOKEN]);
   }
 
-  public subscribe(map: StrikeTokensMap) {
-    this.unsubscribeFromTokens();
+  public updateNiftyPrice(price: number) {
+    this.NIFTY_PRICE = price;
+    if (
+      this.expiry &&
+      this.strikeTokensMap.ceMinus &&
+      this.strikeTokensMap.cePlus &&
+      (this.NIFTY_PRICE < this.strikeTokensMap.ceMinus.strike || this.NIFTY_PRICE > this.strikeTokensMap.cePlus.strike)
+    ) {
+      this.subscribe(this.expiry);
+    }
+  }
+
+  public subscribe(expiry: string) {
+    this.expiry = expiry;
+
+    const atm = tickerService.NIFTY_PRICE;
+    const map = strikesService.getStrikesForExpiry(expiry, atm);
     this.strikeTokensMap = map;
+
+    this.unsubscribeFromTokens();
     this.subscribeToTokens([map.ceMinus.token, map.cePlus.token, map.peMinus.token, map.pePlus.token]);
   }
 

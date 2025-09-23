@@ -26,7 +26,7 @@ export function BearSpreadsCalculator() {
       const response = await api['market-data'].$get();
       return response.json();
     },
-    refetchInterval: 1000, // Poll every second
+    refetchInterval: 500, // Poll every second
     enabled: true,
   });
 
@@ -98,10 +98,10 @@ export function BearSpreadsCalculator() {
           <label className='text-muted-foreground text-sm font-medium'>Connection</label>
           <div className='flex h-9 items-center px-3'>
             <div className='flex items-center gap-2'>
-              <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div className={`h-2 w-2 rounded-full ${isConnected ? 'bg-emerald-500' : 'bg-red-500'}`} />
               <span
                 className={`text-sm font-medium ${
-                  isConnected ? 'text-green-700 dark:text-green-400' : 'text-red-700 dark:text-red-400'
+                  isConnected ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-700 dark:text-red-400'
                 }`}
               >
                 {isConnected ? 'Connected' : 'Disconnected'}
@@ -154,27 +154,27 @@ export function BearSpreadsCalculator() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className='text-center font-semibold'>Bear Call Spread</TableHead>
-                <TableHead className='text-center font-semibold'>Metric</TableHead>
-                <TableHead className='text-center font-semibold'>Bear Put Spread</TableHead>
+                <TableHead className='text-muted-foreground text-center'>Bear Call Spread</TableHead>
+                <TableHead className='text-muted-foreground text-center'>Metric</TableHead>
+                <TableHead className='text-muted-foreground text-center'>Bear Put Spread</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               <TableRow>
-                <TableCell className='text-center text-lg font-semibold tabular-nums'>
+                <TableCell className='bg-emerald-50/60 text-center text-lg font-semibold tabular-nums text-emerald-800 dark:bg-emerald-900/5 dark:text-emerald-500'>
                   {spreadsData?.callSpread.maxProfit?.toFixed(2) || '0.00'}
                 </TableCell>
-                <TableCell className='text-muted-foreground text-center font-medium'>Max Profit</TableCell>
-                <TableCell className='text-center text-lg font-semibold tabular-nums'>
+                <TableCell className='text-center font-semibold'>Max Profit</TableCell>
+                <TableCell className='bg-emerald-50/60 text-center text-lg font-semibold tabular-nums text-emerald-800 dark:bg-emerald-900/5 dark:text-emerald-500'>
                   {spreadsData?.putSpread.maxProfit?.toFixed(2) || '0.00'}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className='text-center text-lg font-semibold tabular-nums'>
+                <TableCell className='bg-red-50/60 text-center text-lg font-semibold tabular-nums text-red-800 dark:bg-red-900/5 dark:text-red-500'>
                   {spreadsData?.callSpread.maxLoss?.toFixed(2) || '0.00'}
                 </TableCell>
-                <TableCell className='text-muted-foreground text-center font-medium'>Max Loss</TableCell>
-                <TableCell className='text-center text-lg font-semibold tabular-nums'>
+                <TableCell className='text-center font-semibold'>Max Loss</TableCell>
+                <TableCell className='bg-red-50/60 text-center text-lg font-semibold tabular-nums text-red-800 dark:bg-red-900/5 dark:text-red-500'>
                   {spreadsData?.putSpread.maxLoss?.toFixed(2) || '0.00'}
                 </TableCell>
               </TableRow>
@@ -182,17 +182,17 @@ export function BearSpreadsCalculator() {
                 <TableCell className='text-center text-lg font-semibold tabular-nums'>
                   {spreadsData?.callSpread.creditOrDebit?.toFixed(2) || '0.00'}
                 </TableCell>
-                <TableCell className='text-muted-foreground text-center font-medium'>Credit/Debit</TableCell>
+                <TableCell className='text-center font-semibold'>Credit/Debit</TableCell>
                 <TableCell className='text-center text-lg font-semibold tabular-nums'>
                   {spreadsData?.putSpread.creditOrDebit?.toFixed(2) || '0.00'}
                 </TableCell>
               </TableRow>
               <TableRow>
-                <TableCell className='text-center text-lg font-semibold tabular-nums'>
+                <TableCell className='bg-yellow-50/60 text-center text-lg font-semibold tabular-nums text-yellow-800 dark:bg-yellow-900/5 dark:text-yellow-500'>
                   {spreadsData?.callSpread.breakEven?.toFixed(2) || '0.00'}
                 </TableCell>
-                <TableCell className='text-muted-foreground text-center font-medium'>Breakeven</TableCell>
-                <TableCell className='text-center text-lg font-semibold tabular-nums'>
+                <TableCell className='text-center font-semibold'>Breakeven</TableCell>
+                <TableCell className='bg-yellow-50/60 text-center text-lg font-semibold tabular-nums text-yellow-800 dark:bg-yellow-900/5 dark:text-yellow-500'>
                   {spreadsData?.putSpread.breakEven?.toFixed(2) || '0.00'}
                 </TableCell>
               </TableRow>
