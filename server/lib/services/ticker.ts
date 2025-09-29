@@ -1,6 +1,7 @@
 import { env } from '@server/lib/env';
 import { logger } from '@server/lib/logger';
 import { accessToken } from '@server/lib/services/accessToken';
+import { kiteService } from '@server/lib/services/kite';
 import { strikesService } from '@server/lib/services/strikes';
 import type { StrikeTokensMap } from '@server/types/types';
 import type { WSContext } from 'hono/ws';
@@ -14,6 +15,14 @@ class TickerService {
   NIFTY_TOKEN!: number;
   NIFTY_PRICE = 0;
   LOT_SIZE = 75;
+
+  // Order monitoring configuration
+  private readonly PRICE_RANGE_OFFSET = 5; // Configurable range offset
+
+  // Order monitoring state
+  private entryPrice: number | null = null;
+  private ordersEnabled: boolean = false;
+  private orderPlaced: boolean = false;
 
   private ticker = new KiteTicker({
     api_key: env.KITE_API_KEY,
@@ -137,7 +146,7 @@ class TickerService {
     setInterval(() => {
       const spreads = this.calculateSpreads();
       if (spreads && this.client) {
-        this.client.send(JSON.stringify(spreads));
+        this.client.send(JSON.stringify({ type: 'spreads', data: spreads }));
       }
     }, 250);
   }
@@ -148,6 +157,10 @@ class TickerService {
 
   public updateNiftyPrice(price: number) {
     this.NIFTY_PRICE = price;
+
+    // Check order conditions
+    this.checkOrderConditions();
+
     if (
       this.expiry &&
       this.strikeTokensMap.ceMinus &&
@@ -182,6 +195,116 @@ class TickerService {
 
   public async disconnect() {
     this.ticker.disconnect();
+  }
+
+  // Order monitoring methods
+  public setEntryPrice(price: number) {
+    this.entryPrice = price;
+    logger.info(`Entry price set to: ${price}`);
+
+    // Send order status update to client
+    this.sendOrderStatusUpdate();
+  }
+
+  public setOrdersEnabled(enabled: boolean) {
+    this.ordersEnabled = enabled;
+
+    // Reset order placed flag when enabling orders
+    if (enabled) {
+      this.orderPlaced = false;
+    }
+
+    logger.info(`Orders ${enabled ? 'enabled' : 'disabled'}`);
+
+    // Send order status update to client
+    this.sendOrderStatusUpdate();
+  }
+
+  private checkOrderConditions() {
+    if (!this.ordersEnabled || !this.entryPrice || this.orderPlaced) {
+      return;
+    }
+
+    const minPrice = this.entryPrice - this.PRICE_RANGE_OFFSET;
+    const maxPrice = this.entryPrice + this.PRICE_RANGE_OFFSET;
+
+    if (this.NIFTY_PRICE >= minPrice && this.NIFTY_PRICE <= maxPrice) {
+      logger.info(`Nifty price ${this.NIFTY_PRICE} is within range [${minPrice}, ${maxPrice}]. Placing order...`);
+      this.placeOrder();
+    }
+  }
+
+  private async placeOrder() {
+    try {
+      // Mark order as placed immediately to prevent multiple orders
+      this.orderPlaced = true;
+      this.ordersEnabled = false; // Turn off monitoring after order placement
+
+      const spreads = this.calculateSpreads();
+      if (!spreads) {
+        logger.error('No spreads found');
+        this.sendOrderStatusUpdate(false, 'No spreads found');
+        return;
+      }
+
+      const ceMaxLoss = spreads.callSpread.maxLoss;
+      const peMaxLoss = spreads.putSpread.maxLoss;
+      const prefix = ceMaxLoss < peMaxLoss ? 'ce' : 'pe';
+
+      const minusTradingSymbol = this.strikeTokensMap[`${prefix}Minus`]?.tradingSymbol;
+      const plusTradingSymbol = this.strikeTokensMap[`${prefix}Plus`]?.tradingSymbol;
+
+      if (!minusTradingSymbol || !plusTradingSymbol) {
+        logger.error('No trading symbols found');
+        this.sendOrderStatusUpdate(false, 'No trading symbols found');
+        return;
+      }
+
+      const orderResponses = await Promise.all([
+        kiteService.placeOrder('regular', {
+          exchange: 'NFO',
+          order_type: 'MARKET',
+          product: 'NRML',
+          tradingsymbol: minusTradingSymbol,
+          transaction_type: 'SELL',
+          quantity: this.LOT_SIZE,
+        }),
+        kiteService.placeOrder('regular', {
+          exchange: 'NFO',
+          order_type: 'MARKET',
+          product: 'NRML',
+          tradingsymbol: plusTradingSymbol,
+          transaction_type: 'BUY',
+          quantity: this.LOT_SIZE,
+        }),
+      ]);
+
+      logger.info(`Order placed successfully:`, orderResponses);
+      this.sendOrderStatusUpdate(true, undefined);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error(`Order placement error: ${errorMessage}`);
+      this.sendOrderStatusUpdate(false, errorMessage);
+    }
+  }
+
+  private sendOrderStatusUpdate(success?: boolean, error?: string) {
+    if (!this.client) return;
+
+    const orderStatusData = {
+      ordersEnabled: this.ordersEnabled,
+      orderPlaced: this.orderPlaced,
+      entryPrice: this.entryPrice,
+      ...(success !== undefined && { success }),
+      ...(error && { error }),
+    };
+
+    this.client.send(
+      JSON.stringify({
+        type: 'order-status',
+        data: orderStatusData,
+      })
+    );
   }
 }
 

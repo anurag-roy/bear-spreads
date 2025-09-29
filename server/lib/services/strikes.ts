@@ -8,8 +8,8 @@ import { sortBy } from 'es-toolkit';
 type ExpiryToStrikesMap = Record<
   string,
   {
-    ce: { strike: number; token: number }[];
-    pe: { strike: number; token: number }[];
+    ce: { strike: number; token: number; tradingSymbol: string }[];
+    pe: { strike: number; token: number; tradingSymbol: string }[];
   }
 >;
 
@@ -32,9 +32,17 @@ class StrikesService {
       }
       if (!option.strike) continue;
       if (option.instrumentType === 'CE') {
-        this.expiryToStrikesMap[expiry].ce.push({ strike: option.strike, token: option.instrumentToken });
+        this.expiryToStrikesMap[expiry].ce.push({
+          strike: option.strike,
+          token: option.instrumentToken,
+          tradingSymbol: option.tradingsymbol,
+        });
       } else {
-        this.expiryToStrikesMap[expiry].pe.push({ strike: option.strike, token: option.instrumentToken });
+        this.expiryToStrikesMap[expiry].pe.push({
+          strike: option.strike,
+          token: option.instrumentToken,
+          tradingSymbol: option.tradingsymbol,
+        });
       }
     }
 

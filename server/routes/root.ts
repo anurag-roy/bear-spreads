@@ -37,4 +37,42 @@ export const rootRoute = new Hono()
         message: 'Subscribed to expiry',
       });
     }
+  )
+  .post(
+    '/orders/set-entry-price',
+    routeValidator(
+      'json',
+      z.object({
+        entryPrice: z.number().positive(),
+      })
+    ),
+    async (c) => {
+      const { entryPrice } = c.req.valid('json');
+
+      tickerService.setEntryPrice(entryPrice);
+
+      return c.json({
+        message: 'Entry price set successfully',
+        entryPrice,
+      });
+    }
+  )
+  .post(
+    '/orders/toggle',
+    routeValidator(
+      'json',
+      z.object({
+        enabled: z.boolean(),
+      })
+    ),
+    async (c) => {
+      const { enabled } = c.req.valid('json');
+
+      tickerService.setOrdersEnabled(enabled);
+
+      return c.json({
+        message: enabled ? 'Order monitoring enabled' : 'Order monitoring disabled',
+        enabled,
+      });
+    }
   );
